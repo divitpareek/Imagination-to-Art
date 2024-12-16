@@ -1,76 +1,53 @@
-import razorpay
-from flask import Flask, render_template, request, jsonify, redirect, url_for
-from flask_sqlalchemy import SQLAlchemy
-import os
-from dotenv import load_dotenv
-
-load_dotenv()  # Load environment variables from .env file
+from flask import Flask, request, jsonify
+import google.auth
+from google.auth.transport.requests import Request
+from google.auth.transport.urllib3 import AuthorizedHttp
+import requests
+import json
 
 app = Flask(__name__)
 
-# Set up database connection
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
+# Google Play Developer API Configuration
+DEVELOPER_API_KEY = 'YOUR_GOOGLE_PLAY_API_KEY'  # Set your Google Play API key here
+PACKAGE_NAME = 'com.example.yourapp'  # Replace with your app's package name
+API_URL = "https://androidpublisher.googleapis.com/v3/applications/{}/purchases/products/{}/tokens/{}"
 
-# Razorpay client setup using environment variables
-razorpay_client = razorpay.Client(auth=(os.getenv("RAZORPAY_KEY_ID"), os.getenv("RAZORPAY_KEY_SECRET")))
-
-# Model to store user data and their payment status
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), nullable=False, unique=True)
-    is_pro = db.Column(db.Boolean, default=False)
-
-# Create the database
-with app.app_context():
-    db.create_all()
-
-# Home route
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-# Route to create a payment order with Razorpay
-@app.route('/create_order', methods=['POST'])
-def create_order():
-    amount = 250 * 100  # Amount in paise (₹250)
-    currency = "INR"
-    
-    order = razorpay_client.order.create(dict(
-        amount=amount,
-        currency=currency,
-        payment_capture='1'  # Automatically capture the payment
-    ))
-
-    return jsonify({'order_id': order['id'], 'amount': amount})
-
-# Route to handle the Razorpay payment success
-@app.route('/payment_success', methods=['POST'])
-def payment_success():
-    payment_data = request.form
-    payment_id = payment_data['razorpay_payment_id']
-    order_id = payment_data['razorpay_order_id']
-    signature = payment_data['razorpay_signature']
-
-    # Verify the payment signature
-    params = {
-        'razorpay_order_id': order_id,
-        'razorpay_payment_id': payment_id,
-        'razorpay_signature': signature
-    }
-    
+@app.route('/verify_purchase', methods=['POST'])
+def verify_purchase():
     try:
-        razorpay_client.utility.verify_payment_signature(params)
-        # Mark user as Pro after successful payment
-        # Here, you would update the user's information in the database
-        user = User.query.filter_by(email='user@example.com').first()  # Replace with actual user fetching logic
-        user.is_pro = True
-        db.session.commit()
-        return jsonify({"status": "success", "message": "Payment successful! Pro features unlocked."})
-    except razorpay.errors.SignatureVerificationError:
-        return jsonify({"status": "error", "message": "Payment verification failed!"})
+        # Get the purchase token from the request body
+        purchase_token = request.json.get('purchase_token')
+        product_id = 'pro_version'  # Your SKU ID in the Play Console
 
-if __name__ == '__main__':
+        if not purchase_token:
+            return jsonify({"status": "error", "message": "Purchase token is missing!"}), 400
+
+        # Verify the purchase with Google Play Developer API
+        url = API_URL.format(PACKAGE_NAME, product_id, purchase_token)
+        headers = {
+            'Authorization': f'Bearer {DEVELOPER_API_KEY}'
+        }
+
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            purchase_data = response.json()
+            if purchase_data['purchaseState'] == 0:  # 0 = PURCHASED
+                # Handle the successful purchase (e.g., unlocking Pro features)
+                return jsonify({"status": "success", "message": "Purchase verified!"}), 200
+            else:
+                return jsonify({"status": "error", "message": "Purchase not valid!"}), 400
+        else:
+            return jsonify({"status": "error", "message": "Failed to verify purchase with Google Play!"}), 500
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+
+# Example route to handle other requests (e.g., unlocking features)
+@app.route('/unlock_pro_features', methods=['POST'])
+def unlock_pro_features():
+    # This can be expanded based on your app logic to unlock Pro features
+    return jsonify({"status": "success", "message": "Pro features unlocked!"})
+
+if __name__ == "__main__":
     app.run(debug=True)
