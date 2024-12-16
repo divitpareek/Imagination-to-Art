@@ -43,10 +43,7 @@ document.getElementById('saveImage').addEventListener('click', saveImage);
 
 // Pro feature: Unlock Pro
 document.getElementById('unlockPro').addEventListener('click', () => {
-  isPro = true;
-  document.getElementById('unlockPro').classList.add('hidden');
-  document.getElementById('proToolbar').classList.remove('hidden');
-  alert('Pro unlocked! Enjoy advanced features.');
+  startPayment();
 });
 
 // Pro features
@@ -59,7 +56,7 @@ document.getElementById('eraser').addEventListener('click', () => {
   if (isPro) isEraser = !isEraser;
 });
 
-// Mouse drawing logic
+// Drawing logic (Mouse)
 function startDrawing(e) {
   drawing = true;
   ctx.beginPath();
@@ -81,7 +78,7 @@ function stopDrawing() {
   saveHistory();
 }
 
-// Touch drawing logic
+// Drawing logic (Touch)
 function startTouch(e) {
   e.preventDefault();
   drawing = true;
@@ -160,4 +157,37 @@ function saveImage() {
   link.download = 'artwork.png';
   link.href = canvas.toDataURL();
   link.click();
+}
+
+// Razorpay payment function
+function startPayment() {
+  var options = {
+    key: "YOUR_RAZORPAY_KEY",  // Replace with your Razorpay key
+    amount: 250 * 100,  // Amount in paise (₹250)
+    currency: "INR",
+    name: "Digital Art App",
+    description: "Unlock Pro Features",
+    image: "https://www.yourapp.com/logo.png",
+    handler: function (response) {
+      // Simulate success: Unlock Pro features
+      alert("Payment successful! Pro features unlocked.");
+      isPro = true;
+      document.getElementById('unlockPro').classList.add('hidden');
+      document.getElementById('proToolbar').classList.remove('hidden');
+    },
+    prefill: {
+      name: "User Name",
+      email: "user@example.com",
+      contact: "1234567890"
+    },
+    notes: {
+      address: "Razorpay Test"
+    },
+    theme: {
+      color: "#F37254"
+    }
+  };
+  
+  var rzp1 = new Razorpay(options);
+  rzp1.open();
 }
