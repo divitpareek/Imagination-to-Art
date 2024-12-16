@@ -15,11 +15,15 @@ let isEraser = false;
 let history = [];
 let historyStep = -1;
 
-// Event listeners for drawing
+// Event listeners for mouse and touch
 canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('mousemove', draw);
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseleave', stopDrawing);
+
+canvas.addEventListener('touchstart', startTouch);
+canvas.addEventListener('touchmove', drawTouch);
+canvas.addEventListener('touchend', stopTouch);
 
 // Toolbar functionality
 document.getElementById('brushPlus').addEventListener('click', () => {
@@ -55,7 +59,7 @@ document.getElementById('eraser').addEventListener('click', () => {
   if (isPro) isEraser = !isEraser;
 });
 
-// Drawing logic
+// Mouse drawing logic
 function startDrawing(e) {
   drawing = true;
   ctx.beginPath();
@@ -75,6 +79,44 @@ function stopDrawing() {
   drawing = false;
   ctx.closePath();
   saveHistory();
+}
+
+// Touch drawing logic
+function startTouch(e) {
+  e.preventDefault();
+  drawing = true;
+  const touch = e.touches[0];
+  const { x, y } = getTouchPos(touch);
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+}
+
+function drawTouch(e) {
+  e.preventDefault();
+  if (!drawing) return;
+
+  const touch = e.touches[0];
+  const { x, y } = getTouchPos(touch);
+  ctx.lineWidth = lineWidth;
+  ctx.strokeStyle = isEraser ? '#ffffff' : brushColor;
+  ctx.lineTo(x, y);
+  ctx.stroke();
+}
+
+function stopTouch(e) {
+  e.preventDefault();
+  drawing = false;
+  ctx.closePath();
+  saveHistory();
+}
+
+// Helper function to get touch position relative to the canvas
+function getTouchPos(touch) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top,
+  };
 }
 
 // Save canvas state to history
