@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <Button
+        android:id="@+id/unlockProButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Unlock Pro Features (₹250)" />
+
+    <Canvas
+        android:id="@+id/artCanvas"
+        android:layout_width="match_parent"
+        android:layout_height="500dp"
+        android:background="#ffffff"
+        android:layout_marginTop="20dp"/>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/brushPlus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Brush +"/>
+
+        <Button
+            android:id="@+id/brushMinus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Brush -"/>
+
+        <Button
+            android:id="@+id/clearCanvas"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Clear"/>
+
+        <Button
+            android:id="@+id/saveImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/proToolbar"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/undo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Undo"/>
+
+        <Button
+            android:id="@+id/redo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Redo"/>
+
+        <Button
+            android:id="@+id/layers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Layers"/>
+    </LinearLayout>
+</LinearLayout>
