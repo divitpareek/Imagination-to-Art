@@ -1,21 +1,16 @@
-// script.js
-
-// Canvas and context setup
+// Canvas setup
 const canvas = document.getElementById('artCanvas');
 const ctx = canvas.getContext('2d');
 canvas.width = 800;
 canvas.height = 600;
 
-// State variables
 let drawing = false;
 let lineWidth = 5;
-let brushColor = '#000000'; // Default brush color: black
 let isPro = false;
-let isEraser = false;
 let history = [];
 let historyStep = -1;
 
-// Event listeners for mouse and touch
+// Event listeners for mouse/touch
 canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('mousemove', draw);
 canvas.addEventListener('mouseup', stopDrawing);
@@ -26,37 +21,17 @@ canvas.addEventListener('touchmove', drawTouch);
 canvas.addEventListener('touchend', stopTouch);
 
 // Toolbar functionality
-document.getElementById('brushPlus').addEventListener('click', () => {
-  lineWidth += 1;
-});
-
-document.getElementById('brushMinus').addEventListener('click', () => {
-  if (lineWidth > 1) lineWidth -= 1;
-});
-
-document.getElementById('clearCanvas').addEventListener('click', () => {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  saveHistory();
-});
-
+document.getElementById('brushPlus').addEventListener('click', () => lineWidth++);
+document.getElementById('brushMinus').addEventListener('click', () => lineWidth > 1 ? lineWidth-- : lineWidth);
+document.getElementById('clearCanvas').addEventListener('click', () => ctx.clearRect(0, 0, canvas.width, canvas.height));
 document.getElementById('saveImage').addEventListener('click', saveImage);
-
-// Pro feature: Unlock Pro
-document.getElementById('unlockPro').addEventListener('click', () => {
-  startPayment();
-});
+document.getElementById('unlockPro').addEventListener('click', startPayment);
 
 // Pro features
 document.getElementById('undo').addEventListener('click', undo);
 document.getElementById('redo').addEventListener('click', redo);
-document.getElementById('layers').addEventListener('click', () => {
-  if (isPro) alert('Layer management is not implemented yet.');
-});
-document.getElementById('eraser').addEventListener('click', () => {
-  if (isPro) isEraser = !isEraser;
-});
 
-// Drawing logic (Mouse)
+// Drawing functions
 function startDrawing(e) {
   drawing = true;
   ctx.beginPath();
@@ -65,9 +40,8 @@ function startDrawing(e) {
 
 function draw(e) {
   if (!drawing) return;
-
   ctx.lineWidth = lineWidth;
-  ctx.strokeStyle = isEraser ? '#ffffff' : brushColor;
+  ctx.strokeStyle = '#000';
   ctx.lineTo(e.offsetX, e.offsetY);
   ctx.stroke();
 }
@@ -78,7 +52,6 @@ function stopDrawing() {
   saveHistory();
 }
 
-// Drawing logic (Touch)
 function startTouch(e) {
   e.preventDefault();
   drawing = true;
@@ -91,11 +64,10 @@ function startTouch(e) {
 function drawTouch(e) {
   e.preventDefault();
   if (!drawing) return;
-
   const touch = e.touches[0];
   const { x, y } = getTouchPos(touch);
   ctx.lineWidth = lineWidth;
-  ctx.strokeStyle = isEraser ? '#ffffff' : brushColor;
+  ctx.strokeStyle = '#000';
   ctx.lineTo(x, y);
   ctx.stroke();
 }
@@ -107,7 +79,6 @@ function stopTouch(e) {
   saveHistory();
 }
 
-// Helper function to get touch position relative to the canvas
 function getTouchPos(touch) {
   const rect = canvas.getBoundingClientRect();
   return {
@@ -116,7 +87,13 @@ function getTouchPos(touch) {
   };
 }
 
-// Save canvas state to history
+function saveImage() {
+  const link = document.createElement('a');
+  link.download = 'artwork.png';
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
 function saveHistory() {
   if (historyStep < history.length - 1) {
     history = history.slice(0, historyStep + 1);
@@ -125,10 +102,9 @@ function saveHistory() {
   historyStep = history.length - 1;
 }
 
-// Undo functionality
 function undo() {
   if (historyStep > 0) {
-    historyStep -= 1;
+    historyStep--;
     const img = new Image();
     img.src = history[historyStep];
     img.onload = () => {
@@ -138,10 +114,9 @@ function undo() {
   }
 }
 
-// Redo functionality
 function redo() {
   if (historyStep < history.length - 1) {
-    historyStep += 1;
+    historyStep++;
     const img = new Image();
     img.src = history[historyStep];
     img.onload = () => {
@@ -151,43 +126,26 @@ function redo() {
   }
 }
 
-// Save canvas as an image
-function saveImage() {
-  const link = document.createElement('a');
-  link.download = 'artwork.png';
-  link.href = canvas.toDataURL();
-  link.click();
-}
-
-// Razorpay payment function
+// Razorpay Payment
 function startPayment() {
-  var options = {
-    key: "YOUR_RAZORPAY_KEY",  // Replace with your Razorpay key
-    amount: 250 * 100,  // Amount in paise (₹250)
-    currency: "INR",
-    name: "Digital Art App",
-    description: "Unlock Pro Features",
-    image: "https://www.yourapp.com/logo.png",
-    handler: function (response) {
-      // Simulate success: Unlock Pro features
-      alert("Payment successful! Pro features unlocked.");
-      isPro = true;
-      document.getElementById('unlockPro').classList.add('hidden');
-      document.getElementById('proToolbar').classList.remove('hidden');
-    },
-    prefill: {
-      name: "User Name",
-      email: "user@example.com",
-      contact: "1234567890"
-    },
-    notes: {
-      address: "Razorpay Test"
-    },
-    theme: {
-      color: "#F37254"
-    }
-  };
-  
-  var rzp1 = new Razorpay(options);
-  rzp1.open();
+  fetch('/create_order', {
+    method: 'POST',
+  })
+    .then(response => response.json())
+    .then(data => {
+      var options = {
+        key: "{{ razorpay_key_id }}", // Your Razorpay Key ID
+        amount: data.amount,
+        currency: "INR",
+        name: "Digital Art App",
+        order_id: data.order_id,
+        handler: function (response) {
+          alert("Payment successful! Pro features unlocked.");
+          isPro = true;
+          document.getElementById('proToolbar').classList.remove('hidden');
+        }
+      };
+      var rzp1 = new Razorpay(options);
+      rzp1.open();
+    });
 }
